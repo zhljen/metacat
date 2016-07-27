@@ -34,22 +34,17 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class MetacatInitializationService {
     private static final Logger log = LoggerFactory.getLogger(MetacatInitializationService.class);
     private final Config config;
-    private final ExecutorService eventExecutor;
     private final Injector injector;
 
     @Inject
     public MetacatInitializationService(Injector injector, Config config) {
         this.config = config;
-        this.eventExecutor = Executors.newFixedThreadPool(config.getEventBusExecutorThreadCount());
         this.injector = injector;
     }
 
@@ -79,10 +74,11 @@ public class MetacatInitializationService {
         MetacatThriftService thriftService = injector.getInstance(MetacatThriftService.class);
         thriftService.start();
 
-        MetacatEventBus eventBus = new MetacatEventBus(eventExecutor);
         // Initialize elastic search client
         Client client = injector.getInstance(Client.class);
-        if( client != null){
+        if (client != null) {
+            MetacatEventBus eventBus = injector.getInstance(MetacatEventBus.class);
+            // Only register the elastic search event handlers if the client is registered
             MetacatEventHandlers handlers = injector.getInstance(MetacatEventHandlers.class);
             eventBus.register(handlers);
         }
@@ -94,17 +90,5 @@ public class MetacatInitializationService {
         // Start the thrift services
         MetacatThriftService thriftService = injector.getInstance(MetacatThriftService.class);
         thriftService.stop();
-
-        // Shutdown the executor used for event bus
-        if(eventExecutor != null){
-            // Make the executor accept no new threads and finish all existing
-            // threads in the queue
-            eventExecutor.shutdown();
-            try {
-                eventExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-            } catch (InterruptedException e) {
-                log.error("Error while shutting down executor service : ", e);
-            }
-        }
     }
 }

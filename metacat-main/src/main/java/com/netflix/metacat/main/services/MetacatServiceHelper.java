@@ -13,12 +13,14 @@
 
 package com.netflix.metacat.main.services;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.netflix.metacat.common.MetacatContext;
 import com.netflix.metacat.common.QualifiedName;
 import com.netflix.metacat.common.dto.BaseDto;
 import com.netflix.metacat.common.dto.PartitionDto;
+import com.netflix.metacat.common.dto.PartitionsSaveRequestDto;
 import com.netflix.metacat.common.dto.PartitionsSaveResponseDto;
 import com.netflix.metacat.common.dto.TableDto;
 import com.netflix.metacat.common.server.events.MetacatEventBus;
@@ -65,16 +67,16 @@ public class MetacatServiceHelper {
     }
 
     public void postPreUpdateEvent(QualifiedName name, BaseDto dto, MetacatContext metacatContext) {
-        if( name.isPartitionDefinition()){
-            List<PartitionDto> dtos = Lists.newArrayList();
-            if( dto != null) {
-                dtos.add((PartitionDto) dto);
+        if (name.isPartitionDefinition()) {
+            PartitionsSaveRequestDto partitionsSaveRequestDto = new PartitionsSaveRequestDto();
+            if (dto != null) {
+                partitionsSaveRequestDto.setPartitions(ImmutableList.of((PartitionDto) dto));
             }
-            eventBus.post(new MetacatSaveTablePartitionPreEvent(name, dtos, metacatContext));
+            eventBus.postSync(new MetacatSaveTablePartitionPreEvent(name, partitionsSaveRequestDto, metacatContext));
         } else if( name.isTableDefinition()){
-            eventBus.post(new MetacatUpdateTablePreEvent(name, (TableDto) dto, metacatContext));
+            eventBus.postSync(new MetacatUpdateTablePreEvent(name, (TableDto) dto, metacatContext));
         } else if( name.isDatabaseDefinition()){
-            eventBus.post(new MetacatUpdateDatabasePreEvent(name, metacatContext));
+            eventBus.postSync(new MetacatUpdateDatabasePreEvent(name, metacatContext));
         }  else {
             throw new IllegalArgumentException(String.format("Invalid name %s", name));
         }
@@ -88,16 +90,16 @@ public class MetacatServiceHelper {
             }
             // This request neither added nor updated partitions
             PartitionsSaveResponseDto partitionsSaveResponseDto = new PartitionsSaveResponseDto();
-            eventBus.post(
+            eventBus.postAsync(
                     new MetacatSaveTablePartitionPostEvent(name, dtos, partitionsSaveResponseDto, metacatContext));
         } else if( name.isTableDefinition()){
             MetacatUpdateTablePostEvent event = new MetacatUpdateTablePostEvent(name, metacatContext);
             if( dto != null){
                 event = new MetacatUpdateTablePostEvent((TableDto)dto, metacatContext);
             }
-            eventBus.post( event);
+            eventBus.postAsync( event);
         } else if( name.isDatabaseDefinition()){
-            eventBus.post(new MetacatUpdateDatabasePostEvent(name, metacatContext));
+            eventBus.postAsync(new MetacatUpdateDatabasePostEvent(name, metacatContext));
         }  else {
             throw new IllegalArgumentException(String.format("Invalid name %s", name));
         }
