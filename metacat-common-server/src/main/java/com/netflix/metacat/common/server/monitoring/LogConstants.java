@@ -13,6 +13,11 @@
 
 package com.netflix.metacat.common.server.monitoring;
 
+import com.google.common.collect.ImmutableMap;
+
+import java.util.Map;
+
+//CHECKSTYLE:OFF
 /**
  * Log constants.
  */
@@ -20,9 +25,9 @@ public enum LogConstants {
     /**
      * General logging constants.
      */
-    GlobalPrefix("dse"), AppPrefix(GlobalPrefix + ".metacat"),
+    AppPrefix("metacat"),
     /**
-     * Counters.
+     * Catalog, database, table operation counters.
      */
     CounterCreateCatalog(AppPrefix + ".countCreateCatalog"),
     CounterCreateTable(AppPrefix + ".countCreateTable"),
@@ -70,6 +75,72 @@ public enum LogConstants {
     CounterUpdateTableFailure(AppPrefix + ".countUpdateTableFailure"),
     CounterSaveTablePartitionsFailure(AppPrefix + ".countSaveTablePartitionsFailure"),
     CounterSaveMViewPartitionsFailure(AppPrefix + ".countSaveMViewPartitionsFailure"),
+
+    /**
+     * evnets.
+     */
+    CounterEventAsync(AppPrefix + ".events.Async"),
+    CounterEventSync(AppPrefix + ".events.Sync"),
+
+    /**
+     * thrift request.
+     */
+    CounterThrift(AppPrefix + ".thrift.count"),
+
+    /**
+     * hive sql lock error.
+     */
+    CounterHiveSqlLockError(AppPrefix + ".hiveSqlLockError"),
+
+    /**
+     * metacat request.
+     */
+    CounterRequestCount(AppPrefix + ".requests.counter"),
+
+
+    /**
+     * Notifications.
+     */
+    CounterSNSNotificationPartitionAdd(AppPrefix + ".notifications.count.partitionsAdd"),
+    CounterSNSNotificationTablePartitionAdd(AppPrefix + ".notifications.count.table.partitionsAdd"),
+    CounterSNSNotificationPartitionDelete(AppPrefix + ".notifications.count.partitionsDelete"),
+    CounterSNSNotificationTablePartitionDelete(AppPrefix + ".notifications.count.table.partitionsDelete"),
+    CounterSNSNotificationTableCreate(AppPrefix + ".notifications.count.table.Create"),
+    CounterSNSNotificationTableDelete(AppPrefix + ".notifications.count.table.Delete"),
+    CounterSNSNotificationTableRename(AppPrefix + ".notifications.count.table.Rename"),
+    CounterSNSNotificationTableUpdate(AppPrefix + ".notifications.count.table.Update"),
+
+    /**
+     * ElasticSearch.
+     */
+    CounterElasticSearchDatabaseCreate(AppPrefix + ".elasticsearch.count.databaseCreate"),
+    CounterElasticSearchDatabaseDelete(AppPrefix + ".elasticsearch.count.databaseDelete"),
+    CounterElasticSearchTableCreate(AppPrefix + ".elasticsearch.count.tableCreate"),
+    CounterElasticSearchTableDelete(AppPrefix + ".elasticsearch.count.tableDelete"),
+    CounterElasticSearchTableSave(AppPrefix + ".elasticsearch.count.tableSave"),
+    CounterElasticSearchTableRename(AppPrefix + ".elasticsearch.count.tableRename"),
+    CounterElasticSearchTableUpdate(AppPrefix + ".elasticsearch.count.tableUpdate"),
+    CounterElasticSearchPartitionSave(AppPrefix + ".elasticsearch.count.partitionSave"),
+    CounterElasticSearchPartitionDelete(AppPrefix + ".elasticsearch.count.partitionDelete"),
+    CounterElasticSearchDelete(AppPrefix + ".elasticsearch.count.esDelete"),
+    CounterElasticSearchBulkDelete(AppPrefix + ".elasticsearch.count.esBulkDelete"),
+    CounterElasticSearchUpdate(AppPrefix + ".elasticsearch.count.esUpdate"),
+    CounterElasticSearchBulkUpdate(AppPrefix + ".elasticsearch.count.esBulkUpdate"),
+    CounterElasticSearchSave(AppPrefix + ".elasticsearch.count.esSave"),
+    CounterElasticSearchBulkSave(AppPrefix + ".elasticsearch.count.esBulkSave"),
+    CounterElasticSearchLog(AppPrefix + ".elasticsearch.count.esLog"),
+    CounterElasticSearchRefresh(AppPrefix + ".elasticsearch.count.esRefresh"),
+    CounterElasticSearchRefreshAlreadyRunning(AppPrefix + ".elasticsearch.count.esRefreshAlreadyRunning"),
+    CounterElasticSearchUnmarkedDatabaseThreshholdReached(
+            AppPrefix + ".elasticsearch.count.unmarkedDatabasesThresholdReached"),
+    CounterElasticSearchUnmarkedTableThreshholdReached(
+            AppPrefix + ".elasticsearch.count.unmarkedTablesThresholdReached"),
+
+    /**
+     * deleteMetadata.
+     */
+    CounterDeleteMetaData(AppPrefix + ".count.deleteMetadata"),
+
     /**
      * Tracers.
      */
@@ -102,7 +173,24 @@ public enum LogConstants {
      */
     GaugeAddPartitions(AppPrefix + ".gaugeAddPartitions"),
     GaugeDeletePartitions(AppPrefix + ".gaugeDeletePartitions"),
-    GaugeGetPartitionsCount(AppPrefix + ".gaugeGetPartitionsCount");
+    GaugeGetPartitionsCount(AppPrefix + ".gaugeGetPartitions"),
+
+    GaugeConnectionsTotal(AppPrefix + ".connections.gauge.total"),
+    GaugeConnectionsActive(AppPrefix + ".connections.gauge.active"),
+    GaugeConnectionsIdle(AppPrefix + ".connections.gauge.idle"),
+
+    /**
+     * Timers.
+     */
+    TimerRequest(AppPrefix + ".requests.timer"),
+    TimerThriftRequest(AppPrefix + ".thriftRequests.timer"),
+    TimerHiveGetPartitions(AppPrefix + ".hive.getPartitions.timer"),
+    TimerElasticSearchRefresh(AppPrefix + ".elasticsearch.timer.esRefresh"),
+
+    /**
+     * Status.
+     */
+    Status("status"), StatusSuccess("success"), StatusFailure("failure");
 
     private final String constant;
 
@@ -113,5 +201,13 @@ public enum LogConstants {
     @Override
     public String toString() {
         return constant;
+    }
+
+    public static Map<String, String> getStatusSuccessMap() {
+        return ImmutableMap.of(LogConstants.Status.name(), LogConstants.StatusSuccess.name());
+    }
+
+    public static Map<String, String> getStatusFailureMap() {
+        return ImmutableMap.of(LogConstants.Status.name(), LogConstants.StatusFailure.name());
     }
 }
