@@ -22,11 +22,13 @@ dependencies {
      *******************************/
 
     compile(project(":metacat-common-server"))
-  //  compile("com.fasterxml.jackson.core:jackson-databind")
-    compile group: 'org.json', name: 'json', version: '20170516'
+    // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
 
-    compile group: 'org.apache.calcite.avatica', name: 'avatica', version: '1.7.1'
-    compile("io.druid:druid-server:0.10.0")
+    compile("org.apache.httpcomponents:httpclient")
+    compile("org.json:json:20170516")
+
+  //  compile group: 'org.apache.calcite.avatica', name: 'avatica', version: '1.7.1'
+  //  compile("io.druid:druid-server:0.10.0")
     /*******************************
      * Provided Dependencies
      *******************************/
@@ -34,7 +36,7 @@ dependencies {
     /*******************************
      * Runtime Dependencies
      *******************************/
-    runtime("commons-logging:commons-logging")
+  //  runtime("commons-logging:commons-logging")
 
     /*******************************
      * Test Dependencies
