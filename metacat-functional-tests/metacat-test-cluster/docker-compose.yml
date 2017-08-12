@@ -25,6 +25,7 @@ services:
             - hive-metastore-db
             - postgresql
             - cassandra
+            - druid
         ports:
             - '8080'
             - '8000'
@@ -61,6 +62,13 @@ services:
           - ./datastores/cassandra/:/init
         labels:
           - "com.netflix.metacat.oss.test"
+    druid:
+        image: druidio/example-cluster
+        ports:
+          - '8082'
+          - '8081'
+        labels:
+           - "com.netflix.metacat.oss.test"
     hive-metastore-db:
         image: mysql:5.6
         volumes:
@@ -100,8 +108,9 @@ services:
             - hive-metastore-db
             - postgresql
             - cassandra
+            - druid
         environment:
-            - TARGETS=postgresql:5432,cassandra:9042,hive-metastore-db:3306
+            - TARGETS=postgresql:5432,cassandra:9042,hive-metastore-db:3306,druid:8081
         labels:
           - "com.netflix.metacat.oss.test"
     service-barrier:
