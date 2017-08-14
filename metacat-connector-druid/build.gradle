@@ -25,10 +25,8 @@ dependencies {
     // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
 
     compile("org.apache.httpcomponents:httpclient")
-    compile("org.json:json:20170516")
+    compile("org.json:json")
 
-  //  compile group: 'org.apache.calcite.avatica', name: 'avatica', version: '1.7.1'
-  //  compile("io.druid:druid-server:0.10.0")
     /*******************************
      * Provided Dependencies
      *******************************/
@@ -36,7 +34,6 @@ dependencies {
     /*******************************
      * Runtime Dependencies
      *******************************/
-  //  runtime("commons-logging:commons-logging")
 
     /*******************************
      * Test Dependencies
