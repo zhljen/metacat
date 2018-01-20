@@ -21,6 +21,7 @@ import com.netflix.metacat.common.QualifiedName
 import com.netflix.metacat.common.dto.Pageable
 import com.netflix.metacat.common.dto.Sort
 import com.netflix.metacat.common.dto.SortOrder
+import com.netflix.metacat.common.exception.MetacatBadRequestException
 import com.netflix.metacat.common.server.connectors.ConnectorContext
 import com.netflix.metacat.common.server.connectors.ConnectorRequestContext
 import com.netflix.metacat.common.server.connectors.exception.*
@@ -34,6 +35,7 @@ import com.netflix.metacat.connector.hive.converters.HiveTypeConverter
 import com.netflix.metacat.connector.hive.util.HiveConfigConstants
 import com.netflix.metacat.testdata.provider.MetacatDataInfoProvider
 import com.netflix.spectator.api.Registry
+import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.metastore.api.*
 import org.apache.thrift.TException
 import spock.lang.Shared
@@ -132,6 +134,31 @@ class HiveConnectorTableSpec extends Specification {
                 .serde(StorageInfo.builder().serializationLib('org.apache.hadoop.hive.ql.io.orc.OrcSerde').outputFormat('org.apache.hadoop.hive.ql.io.orc.OrcInputFormat').build()).build())
         then:
         noExceptionThrown()
+    }
+
+    def "Test for create virtual view"() {
+        when:
+        hiveConnectorTableService.create(connectorRequestContext,
+            TableInfo.builder().name(QualifiedName.ofTable("testhive", "test1", "testingview"))
+                .tableType(TableType.VIRTUAL_VIEW.toString())
+                .viewOriginalText("test sql")
+                .serde(StorageInfo.builder().serializationLib('org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe')
+                .outputFormat('org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat')
+                .build()).build())
+        then:
+        noExceptionThrown()
+    }
+
+    def "Test for create virtual view with missing viewText"() {
+        when:
+        hiveConnectorTableService.create(connectorRequestContext,
+            TableInfo.builder().name(QualifiedName.ofTable("testhive", "test1", "testingview"))
+                .tableType(TableType.VIRTUAL_VIEW.toString())
+                .serde(StorageInfo.builder().serializationLib('org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe')
+                .outputFormat('org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat')
+                .build()).build())
+        then:
+        thrown MetacatBadRequestException
     }
 
     @Unroll

@@ -29,6 +29,7 @@ import com.netflix.metacat.common.dto.FieldDto;
 import com.netflix.metacat.common.dto.PartitionDto;
 import com.netflix.metacat.common.dto.StorageDto;
 import com.netflix.metacat.common.dto.TableDto;
+import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.Warehouse;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -119,7 +120,9 @@ public class HiveConvertersImpl implements HiveConverters {
             .map(field -> this.hiveToMetacatField(field, true))
             .forEachOrdered(allFields::add);
         dto.setFields(allFields);
-
+        dto.setTableType(table.getTableType());
+        dto.setViewOriginalText(table.getViewOriginalText());
+        dto.setViewExpandedText(table.getViewExpandedText());
         return dto;
     }
 
@@ -192,9 +195,10 @@ public class HiveConvertersImpl implements HiveConverters {
         }
         table.setParameters(params);
 
-        // TODO get this
-        table.setTableType("EXTERNAL_TABLE");
-
+        table.setTableType(Strings.isNullOrEmpty(dto.getTableType())
+            ? TableType.EXTERNAL_TABLE.name() : dto.getTableType());
+        table.setViewOriginalText(dto.getViewOriginalText());
+        table.setViewExpandedText(dto.getViewExpandedText());
         table.setSd(fromStorageDto(storageDto));
         final StorageDescriptor sd = table.getSd();
 

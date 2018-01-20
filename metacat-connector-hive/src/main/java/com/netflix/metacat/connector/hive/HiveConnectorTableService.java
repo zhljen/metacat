@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import com.netflix.metacat.common.QualifiedName;
 import com.netflix.metacat.common.dto.Pageable;
 import com.netflix.metacat.common.dto.Sort;
+import com.netflix.metacat.common.exception.MetacatBadRequestException;
 import com.netflix.metacat.common.server.connectors.ConnectorContext;
 import com.netflix.metacat.common.server.connectors.ConnectorRequestContext;
 import com.netflix.metacat.common.server.connectors.ConnectorTableService;
@@ -151,7 +152,14 @@ public class HiveConnectorTableService implements ConnectorTableService {
         if (table.getParameters() == null || table.getParameters().isEmpty()) {
             table.setParameters(Maps.newHashMap());
         }
-        table.getParameters().putIfAbsent(PARAMETER_EXTERNAL, "TRUE");
+        //if this a type of table, we all mark it external table
+        //otherwise leaves it as such as VIRTUAL_VIEW
+        if (!isVirtualView(table)) {
+            table.getParameters().putIfAbsent(PARAMETER_EXTERNAL, "TRUE");
+        } else {
+            validAndUpdateVirtualView(table);
+        }
+
         if (tableInfo.getMetadata() != null) {
             table.getParameters().putAll(tableInfo.getMetadata());
         }
@@ -231,6 +239,21 @@ public class HiveConnectorTableService implements ConnectorTableService {
             table.setPartitionKeys(partitionKeys);
         }
         table.setSd(sd);
+    }
+
+    private void validAndUpdateVirtualView(final Table table) {
+        if (isVirtualView(table) && Strings.isNullOrEmpty(table.getViewOriginalText())) {
+            throw new MetacatBadRequestException("Invalid view creation. Missing viewOrginialText");
+        }
+        //setting dummy string to view to avoid dropping view issue
+        if (Strings.isNullOrEmpty(table.getSd().getLocation())) {
+            table.getSd().setLocation("file://tmp/" + table.getDbName() + "/" + table.getTableName());
+        }
+    }
+
+    private boolean isVirtualView(final Table table) {
+        return null != table.getTableType()
+            && table.getTableType().equals(TableType.VIRTUAL_VIEW.toString());
     }
 
     /**

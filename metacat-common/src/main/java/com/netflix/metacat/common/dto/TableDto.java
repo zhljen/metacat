@@ -68,6 +68,12 @@ public class TableDto extends BaseDto implements HasDataMetadata, HasDefinitionM
     private QualifiedName name;
     @ApiModelProperty(value = "serialization/deserialization info about the table")
     private StorageDto serde;
+    @JsonProperty
+    private String viewOriginalText;
+    @JsonProperty
+    private String viewExpandedText;
+    @JsonProperty
+    private String tableType;
 
     @Nonnull
     @Override

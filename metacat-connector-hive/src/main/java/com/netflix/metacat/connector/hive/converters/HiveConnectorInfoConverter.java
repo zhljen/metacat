@@ -32,6 +32,7 @@ import com.netflix.metacat.common.server.connectors.model.TableInfo;
 import com.netflix.metacat.connector.hive.util.HiveTableUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Partition;
@@ -73,6 +74,7 @@ public class HiveConnectorInfoConverter implements ConnectorInfoConverter<Databa
 
     /**
      * Converts epoch time to Date.
+     *
      * @param seconds time in seconds
      * @return Date
      */
@@ -154,6 +156,9 @@ public class HiveConnectorInfoConverter implements ConnectorInfoConverter<Databa
         return TableInfo.builder()
             .serde(toStorageInfo(table.getSd(), table.getOwner())).fields(allFields)
             .metadata(table.getParameters()).name(name).auditInfo(auditInfo)
+            .viewOriginalText(table.getViewOriginalText())
+            .viewExpandedText(table.getViewExpandedText())
+            .tableType(table.getTableType())
             .build();
     }
 
@@ -205,9 +210,10 @@ public class HiveConnectorInfoConverter implements ConnectorInfoConverter<Databa
             sd,
             partitionFields,
             params,
-            null,
-            null,
-            "EXTERNAL_TABLE");
+            tableInfo.getViewOriginalText(),
+            tableInfo.getViewExpandedText(),
+            Strings.isNullOrEmpty(tableInfo.getTableType())
+                ? TableType.EXTERNAL_TABLE.name() : tableInfo.getTableType());
     }
 
     /**
