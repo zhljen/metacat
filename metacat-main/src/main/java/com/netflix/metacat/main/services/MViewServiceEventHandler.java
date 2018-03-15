@@ -49,7 +49,8 @@ public class MViewServiceEventHandler {
      * @param userMetadataService  user metadata service
      */
     @Autowired
-    public MViewServiceEventHandler(final Config config, final MViewService mViewService,
+    public MViewServiceEventHandler(final Config config,
+                                    final MViewService mViewService,
                                     final UserMetadataService userMetadataService) {
         this.config = config;
         this.mViewService = mViewService;

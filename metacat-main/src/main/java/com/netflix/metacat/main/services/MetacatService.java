@@ -20,11 +20,14 @@ import com.netflix.metacat.common.dto.BaseDto;
 /**
  * Base service interface for all entities like catalog, database, table, view and partition.
  *
+ * @author amajumdar,zhenl
+ *
  * @param <T> Resource entity type.
  */
 public interface MetacatService<T extends BaseDto> {
     /**
      * Creates the object.
+     *
      * @param name qualified name of the object
      * @param dto  object metadata
      * @return created object
@@ -33,6 +36,7 @@ public interface MetacatService<T extends BaseDto> {
 
     /**
      * Updates the object.
+     *
      * @param name qualified name of the object
      * @param dto  object dto
      */
@@ -41,20 +45,23 @@ public interface MetacatService<T extends BaseDto> {
 
     /**
      * Updates the object and return the updated object.
+     *
      * @param name qualified name of the object
-     * @param dto  dto
+     * @param dto  object dto
      * @return updated object
      */
     T updateAndReturn(QualifiedName name, T dto);
 
     /**
      * Deletes the object. Returns the metadata of the object deleted.
+     *
      * @param name qualified name of the object to be deleted
      */
     void delete(QualifiedName name);
 
     /**
      * Returns the object with the given name.
+     *
      * @param name qualified name of the object
      * @return Returns the object with the given name
      */
@@ -62,6 +69,7 @@ public interface MetacatService<T extends BaseDto> {
 
     /**
      * Returns true, if the object exists.
+     *
      * @param name qualified name of the object
      * @return boolean
      */

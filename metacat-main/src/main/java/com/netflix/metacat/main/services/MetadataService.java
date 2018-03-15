@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 
 /**
  * Metadata Service. This class includes any common services for the user metadata.
+ *
  * @author amajumdar
  */
 @Slf4j
@@ -58,13 +59,14 @@ public class MetadataService {
 
     /**
      * Constructor.
-     * @param config                configuration
-     * @param tableService          table service
-     * @param partitionService      partition service
-     * @param userMetadataService   usermetadata service
-     * @param tagService            tag service
-     * @param helper                service helper
-     * @param registry              registry
+     *
+     * @param config              configuration
+     * @param tableService        table service
+     * @param partitionService    partition service
+     * @param userMetadataService user metadata service
+     * @param tagService          tag service
+     * @param helper              service helper
+     * @param registry            registry
      */
     public MetadataService(final Config config,
                            final TableService tableService,
@@ -176,13 +178,14 @@ public class MetadataService {
 
     /**
      * Deletes definition metadata for the given <code>name</code>.
-     * @param name qualified name
-     * @param force If true, deletes the metadata without checking if the database/table/partition exists
+     *
+     * @param name                  qualified name
+     * @param force                 If true, deletes the metadata without checking if database/table/partition exists
      * @param metacatRequestContext request context
      * @return true if deleted
      */
     public boolean deleteDefinitionMetadata(final QualifiedName name, final boolean force,
-        final MetacatRequestContext metacatRequestContext) {
+                                            final MetacatRequestContext metacatRequestContext) {
         try {
             final MetacatService service = this.helper.getService(name);
             BaseDto dto = null;

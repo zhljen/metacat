@@ -45,7 +45,6 @@ import com.netflix.metacat.main.services.impl.MViewServiceImpl;
 import com.netflix.metacat.main.services.impl.PartitionServiceImpl;
 import com.netflix.metacat.main.services.impl.TableServiceImpl;
 import com.netflix.spectator.api.Registry;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -96,7 +95,7 @@ public class ServicesConfig {
      * The catalog service bean.
      *
      * @param connectorManager    Connector manager to use
-     * @param userMetadataService  user metadata service
+     * @param userMetadataService  User metadata service
      * @param metacatEventBus     Event bus to use
      * @param converterUtil       Converter utilities
      * @return Catalog service implementation
@@ -124,7 +123,6 @@ public class ServicesConfig {
     @Bean
     public DatabaseService databaseService(
         final ConnectorManager connectorManager,
-        @Qualifier("userMetadataService")
         final UserMetadataService userMetadataService,
         final MetacatEventBus metacatEventBus,
         final ConverterUtil converterUtil,
@@ -194,7 +192,6 @@ public class ServicesConfig {
         final CatalogService catalogService,
         final ConnectorManager connectorManager,
         final TableService tableService,
-        @Qualifier("userMetadataService")
         final UserMetadataService userMetadataService,
         final ThreadServiceManager threadServiceManager,
         final Config config,
@@ -283,7 +280,6 @@ public class ServicesConfig {
         final Config config,
         final TableService tableService,
         final PartitionService partitionService,
-        @Qualifier("userMetadataService")
         final UserMetadataService userMetadataService,
         final TagService tagService,
         final MetacatServiceHelper helper,

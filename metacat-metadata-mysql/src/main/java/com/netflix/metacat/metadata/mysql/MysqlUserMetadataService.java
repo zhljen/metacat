@@ -114,30 +114,6 @@ public class MysqlUserMetadataService extends BaseUserMetadataService {
         return retData;
     }
 
-    /**
-     * Populate the given metadata.
-     *
-     * @param holder metadata
-     */
-    @Override
-    public void populateMetadata(final HasMetadata holder, final boolean disableIntercetpor) {
-        Optional<ObjectNode> metadata = Optional.empty();
-        if (holder instanceof HasDataMetadata) {
-            final HasDataMetadata dataDto = (HasDataMetadata) holder;
-            if (dataDto.isDataExternal()) {
-                metadata = getDataMetadata(dataDto.getDataUri());
-            }
-        }
-        Optional<ObjectNode> definitionMetadata = Optional.empty();
-        if (holder instanceof HasDefinitionMetadata) {
-            final HasDefinitionMetadata definitionDto = (HasDefinitionMetadata) holder;
-            definitionMetadata = disableIntercetpor ? this.getDefinitionMetadata(definitionDto.getDefinitionName())
-                : this.getDefinitionMetadataWithParameters(definitionDto.getDefinitionName(),
-                GetMetadataInterceptorParameters.builder().hasMetadata(holder).build());
-        }
-        populateMetadata(holder, definitionMetadata.orElse(null), metadata.orElse(null));
-    }
-
 
     @Override
     public void softDeleteDataMetadata(
@@ -484,7 +460,7 @@ public class MysqlUserMetadataService extends BaseUserMetadataService {
      * @param keyValue parameters
      * @return result object node
      */
-    protected Optional<ObjectNode> getJsonForKey(final String query, final String keyValue) {
+    private Optional<ObjectNode> getJsonForKey(final String query, final String keyValue) {
         try {
             ResultSetExtractor<Optional<ObjectNode>> handler = rs -> {
                 final String json;
@@ -521,7 +497,7 @@ public class MysqlUserMetadataService extends BaseUserMetadataService {
      * @param keyValues parameters
      * @return number of updated rows
      */
-    int executeUpdateForKey(final String query, final String... keyValues) {
+    private int executeUpdateForKey(final String query, final String... keyValues) {
         try {
             final SqlParameterValue[] values =
                 Arrays.stream(keyValues).map(keyValue -> new SqlParameterValue(Types.VARCHAR, keyValue))

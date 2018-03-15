@@ -61,6 +61,30 @@ public abstract class BaseUserMetadataService implements UserMetadataService {
     }
 
     /**
+     * Populate the given metadata.
+     *
+     * @param holder metadata
+     */
+    @Override
+    public void populateMetadata(final HasMetadata holder, final boolean disableIntercetpor) {
+        Optional<ObjectNode> metadata = Optional.empty();
+        if (holder instanceof HasDataMetadata) {
+            final HasDataMetadata dataDto = (HasDataMetadata) holder;
+            if (dataDto.isDataExternal()) {
+                metadata = getDataMetadata(dataDto.getDataUri());
+            }
+        }
+        Optional<ObjectNode> definitionMetadata = Optional.empty();
+        if (holder instanceof HasDefinitionMetadata) {
+            final HasDefinitionMetadata definitionDto = (HasDefinitionMetadata) holder;
+            definitionMetadata = disableIntercetpor ? this.getDefinitionMetadata(definitionDto.getDefinitionName())
+                : this.getDefinitionMetadataWithParameters(definitionDto.getDefinitionName(),
+                GetMetadataInterceptorParameters.builder().hasMetadata(holder).build());
+        }
+        populateMetadata(holder, definitionMetadata.orElse(null), metadata.orElse(null));
+    }
+
+    /**
      * Populate metadata.
      *
      * @param holder             metadata

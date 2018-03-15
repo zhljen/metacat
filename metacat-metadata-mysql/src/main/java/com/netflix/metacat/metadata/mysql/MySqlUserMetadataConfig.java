@@ -62,7 +62,7 @@ public class MySqlUserMetadataConfig {
      * @param metadataInterceptor  business metadata manager
      * @return User metadata service based on MySql
      */
-    @Bean("userMetadataService")
+    @Bean
     public UserMetadataService userMetadataService(
         @Qualifier("metadataJdbcTemplate") final JdbcTemplate jdbcTemplate,
         final Config config,
