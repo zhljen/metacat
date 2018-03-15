@@ -50,7 +50,7 @@ public class MViewServiceEventHandler {
      */
     @Autowired
     public MViewServiceEventHandler(final Config config, final MViewService mViewService,
-        final UserMetadataService userMetadataService) {
+                                    final UserMetadataService userMetadataService) {
         this.config = config;
         this.mViewService = mViewService;
         this.userMetadataService = userMetadataService;

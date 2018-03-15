@@ -31,6 +31,7 @@ import com.netflix.metacat.common.server.usermetadata.UserMetadataService;
 import com.netflix.metacat.common.server.util.MetacatContextManager;
 import com.netflix.metacat.common.server.util.ThreadServiceManager;
 import com.netflix.spectator.api.Registry;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 
@@ -45,6 +46,7 @@ import java.util.stream.Stream;
  * @author amajumdar
  */
 @Slf4j
+@Getter
 public class MetadataService {
     private final Config config;
     private final TableService tableService;
@@ -64,10 +66,13 @@ public class MetadataService {
      * @param helper                service helper
      * @param registry              registry
      */
-    public MetadataService(final Config config, final TableService tableService,
-        final PartitionService partitionService,
-        final UserMetadataService userMetadataService, final TagService tagService,
-        final MetacatServiceHelper helper, final Registry registry) {
+    public MetadataService(final Config config,
+                           final TableService tableService,
+                           final PartitionService partitionService,
+                           final UserMetadataService userMetadataService,
+                           final TagService tagService,
+                           final MetacatServiceHelper helper,
+                           final Registry registry) {
         this.config = config;
         this.tableService = tableService;
         this.partitionService = partitionService;
@@ -149,7 +154,7 @@ public class MetadataService {
         final ListeningExecutorService service = threadServiceManager.getExecutor();
         int totalDeletes = 0;
         while (offset == 0 || dtos.size() == limit) {
-            dtos = userMetadataService.searchDefinitionMetadata(null, null, null,
+            dtos = userMetadataService.searchDefinitionMetadata(null, null, null, null,
                 "id", null, offset, limit);
             int deletes = 0;
             final List<ListenableFuture<Boolean>> futures = dtos.stream().map(dto ->

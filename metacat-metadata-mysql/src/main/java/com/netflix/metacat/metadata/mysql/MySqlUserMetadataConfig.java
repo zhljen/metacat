@@ -62,7 +62,7 @@ public class MySqlUserMetadataConfig {
      * @param metadataInterceptor  business metadata manager
      * @return User metadata service based on MySql
      */
-    @Bean
+    @Bean("userMetadataService")
     public UserMetadataService userMetadataService(
         @Qualifier("metadataJdbcTemplate") final JdbcTemplate jdbcTemplate,
         final Config config,
@@ -71,6 +71,7 @@ public class MySqlUserMetadataConfig {
     ) {
         return new MysqlUserMetadataService(jdbcTemplate, metacatJson, config, metadataInterceptor);
     }
+
 
     /**
      * Lookup service.

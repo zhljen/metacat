@@ -48,7 +48,6 @@ public abstract class BaseUserMetadataService implements UserMetadataService {
                 saveDefinitionMetadata(defDto.getDefinitionName(), userId, Optional.of(newMetadata), merge);
             }
         }
-
         if (holder instanceof HasDataMetadata) {
             final HasDataMetadata dataDto = (HasDataMetadata) holder;
 
@@ -59,28 +58,6 @@ public abstract class BaseUserMetadataService implements UserMetadataService {
                 saveDataMetadata(dataDto.getDataUri(), userId, Optional.of(newMetadata), merge);
             }
         }
-    }
-
-    /**
-     * Populate the given metadata.
-     *
-     * @param holder metadata
-     */
-    @Override
-    public void populateMetadata(final HasMetadata holder) {
-        Optional<ObjectNode> metadata = Optional.empty();
-        if (holder instanceof HasDataMetadata) {
-            final HasDataMetadata dataDto = (HasDataMetadata) holder;
-            if (dataDto.isDataExternal()) {
-                metadata = getDataMetadata(dataDto.getDataUri());
-            }
-        }
-        Optional<ObjectNode> definitionMetadata = Optional.empty();
-        if (holder instanceof HasDefinitionMetadata) {
-            final HasDefinitionMetadata definitionDto = (HasDefinitionMetadata) holder;
-            definitionMetadata = getDefinitionMetadata(definitionDto.getDefinitionName());
-        }
-        populateMetadata(holder, definitionMetadata.orElse(null), metadata.orElse(null));
     }
 
     /**

@@ -121,6 +121,20 @@ public interface UserMetadataService {
     }
 
     /**
+     * Returns the definition metadata for the given name.
+     *
+     * @param name                             name
+     * @param getMetadataInterceptorParameters get Metadata Interceptor parameters
+     * @return definition metadata for the given name
+     */
+    @Nonnull
+    default Optional<ObjectNode> getDefinitionMetadataWithParameters(
+        QualifiedName name,
+        GetMetadataInterceptorParameters getMetadataInterceptorParameters) {
+        return Optional.empty();
+    }
+
+    /**
      * Returns the descendants for the given name.
      *
      * @param name name
@@ -197,8 +211,9 @@ public interface UserMetadataService {
      * Populate the metadata.
      *
      * @param holder metadata
+     * @param disableInterceptor diable interceptor
      */
-    default void populateMetadata(HasMetadata holder) {
+    default void populateMetadata(HasMetadata holder, boolean disableInterceptor) {
     }
 
     /**
@@ -258,6 +273,7 @@ public interface UserMetadataService {
      * @param propertyNames names
      * @param type          type
      * @param name          name
+     * @param holder        dto
      * @param sortBy        sort column
      * @param sortOrder     sort order
      * @param offset        offset
@@ -268,6 +284,7 @@ public interface UserMetadataService {
         @Nullable Set<String> propertyNames,
         @Nullable String type,
         @Nullable String name,
+        @Nullable HasMetadata holder,
         @Nullable String sortBy,
         @Nullable String sortOrder,
         @Nullable Integer offset,
