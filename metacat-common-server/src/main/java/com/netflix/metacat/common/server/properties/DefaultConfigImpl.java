@@ -419,4 +419,14 @@ public class DefaultConfigImpl implements Config {
     public boolean isCacheEnabled() {
         return this.metacatProperties.getCache().isEnabled();
     }
+
+    @Override
+    public String getMetacatCreateAcl() {
+        return this.metacatProperties.getAuthorization().getCreateAcl();
+    }
+
+    @Override
+    public String getMetacatDeleteAcl() {
+        return this.metacatProperties.getAuthorization().getDeleteAcl();
+    }
 }

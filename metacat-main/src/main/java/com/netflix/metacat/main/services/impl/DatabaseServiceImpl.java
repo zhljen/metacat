@@ -19,6 +19,7 @@ import com.netflix.metacat.common.MetacatRequestContext;
 import com.netflix.metacat.common.QualifiedName;
 import com.netflix.metacat.common.dto.CatalogDto;
 import com.netflix.metacat.common.dto.DatabaseDto;
+import com.netflix.metacat.common.exception.MetacatUnAuthorizedException;
 import com.netflix.metacat.common.server.connectors.ConnectorDatabaseService;
 import com.netflix.metacat.common.server.connectors.ConnectorRequestContext;
 import com.netflix.metacat.common.server.connectors.ConnectorTableService;
@@ -31,6 +32,8 @@ import com.netflix.metacat.common.server.events.MetacatDeleteDatabasePreEvent;
 import com.netflix.metacat.common.server.events.MetacatEventBus;
 import com.netflix.metacat.common.server.events.MetacatUpdateDatabasePostEvent;
 import com.netflix.metacat.common.server.events.MetacatUpdateDatabasePreEvent;
+import com.netflix.metacat.common.server.usermetadata.AuthorizationService;
+import com.netflix.metacat.common.server.usermetadata.MetacatACL;
 import com.netflix.metacat.main.manager.ConnectorManager;
 import com.netflix.metacat.main.services.CatalogService;
 import com.netflix.metacat.main.services.DatabaseService;
@@ -57,28 +60,32 @@ public class DatabaseServiceImpl implements DatabaseService {
 
     private final MetacatEventBus eventBus;
     private final ConverterUtil converterUtil;
+    private final AuthorizationService authorizationService;
 
     /**
      * Constructor.
      *
-     * @param catalogService                 catalog service
-     * @param connectorManager               connector manager
-     * @param userMetadataService            user metadata service
-     * @param eventBus                       internal event bus
-     * @param converterUtil                  utility to convert to/from Dto to connector resources
+     * @param catalogService       catalog service
+     * @param connectorManager     connector manager
+     * @param userMetadataService  user metadata service
+     * @param eventBus             internal event bus
+     * @param converterUtil        utility to convert to/from Dto to connector resources
+     * @param authorizationService authorization service
      */
     public DatabaseServiceImpl(
         final CatalogService catalogService,
         final ConnectorManager connectorManager,
         final UserMetadataService userMetadataService,
         final MetacatEventBus eventBus,
-        final ConverterUtil converterUtil
+        final ConverterUtil converterUtil,
+        final AuthorizationService authorizationService
     ) {
         this.catalogService = catalogService;
         this.connectorManager = connectorManager;
         this.userMetadataService = userMetadataService;
         this.eventBus = eventBus;
         this.converterUtil = converterUtil;
+        this.authorizationService = authorizationService;
     }
 
     /**
@@ -147,8 +154,14 @@ public class DatabaseServiceImpl implements DatabaseService {
     @Override
     public void delete(final QualifiedName name) {
         validate(name);
-        log.info("Dropping schema {}", name);
         final MetacatRequestContext metacatRequestContext = MetacatContextManager.getContext();
+        if (this.authorizationService.isUnauthorized(metacatRequestContext.getUserName(),
+            name, MetacatACL.metacatDelete)) {
+            throw new MetacatUnAuthorizedException(
+                String.format("delete %s db is unauthorized for %s",
+                    name.getDatabaseName(), metacatRequestContext.getUserName()));
+        }
+        log.info("Dropping schema {}", name);
         final DatabaseDto dto = get(name, GetDatabaseServiceParameters.builder()
             .disableOnReadMetadataIntercetor(false)
             .includeUserMetadata(true)

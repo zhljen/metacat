@@ -25,6 +25,7 @@ import com.netflix.metacat.common.dto.DatabaseDto;
 import com.netflix.metacat.common.dto.StorageDto;
 import com.netflix.metacat.common.dto.TableDto;
 import com.netflix.metacat.common.exception.MetacatNotSupportedException;
+import com.netflix.metacat.common.exception.MetacatUnAuthorizedException;
 import com.netflix.metacat.common.server.connectors.exception.NotFoundException;
 import com.netflix.metacat.common.server.connectors.exception.TableNotFoundException;
 import com.netflix.metacat.common.server.events.MetacatCreateTablePostEvent;
@@ -38,7 +39,9 @@ import com.netflix.metacat.common.server.events.MetacatUpdateTablePostEvent;
 import com.netflix.metacat.common.server.events.MetacatUpdateTablePreEvent;
 import com.netflix.metacat.common.server.monitoring.Metrics;
 import com.netflix.metacat.common.server.properties.Config;
+import com.netflix.metacat.common.server.usermetadata.AuthorizationService;
 import com.netflix.metacat.common.server.usermetadata.GetMetadataInterceptorParameters;
+import com.netflix.metacat.common.server.usermetadata.MetacatACL;
 import com.netflix.metacat.common.server.usermetadata.TagService;
 import com.netflix.metacat.common.server.usermetadata.UserMetadataService;
 import com.netflix.metacat.common.server.util.MetacatContextManager;
@@ -67,17 +70,19 @@ public class TableServiceImpl implements TableService {
     private final Registry registry;
     private final Config config;
     private final ConnectorTableServiceProxy connectorTableServiceProxy;
+    private final AuthorizationService authorizationService;
 
     /**
      * Constructor.
      *
      * @param connectorTableServiceProxy connector table service proxy
-     * @param databaseService     database service
-     * @param tagService          tag service
-     * @param userMetadataService user metadata service
-     * @param eventBus            Internal event bus
-     * @param registry            registry handle
-     * @param config              configurations
+     * @param databaseService            database service
+     * @param tagService                 tag service
+     * @param userMetadataService        user metadata service
+     * @param eventBus                   Internal event bus
+     * @param registry                   registry handle
+     * @param config                     configurations
+     * @param authorizationService       authorization service
      */
     public TableServiceImpl(
         final ConnectorTableServiceProxy connectorTableServiceProxy,
@@ -86,7 +91,8 @@ public class TableServiceImpl implements TableService {
         final UserMetadataService userMetadataService,
         final MetacatEventBus eventBus,
         final Registry registry,
-        final Config config
+        final Config config,
+        final AuthorizationService authorizationService
     ) {
         this.connectorTableServiceProxy = connectorTableServiceProxy;
         this.databaseService = databaseService;
@@ -95,6 +101,7 @@ public class TableServiceImpl implements TableService {
         this.eventBus = eventBus;
         this.registry = registry;
         this.config = config;
+        this.authorizationService = authorizationService;
     }
 
     /**
@@ -104,6 +111,12 @@ public class TableServiceImpl implements TableService {
     public TableDto create(final QualifiedName name, final TableDto tableDto) {
         final MetacatRequestContext metacatRequestContext = MetacatContextManager.getContext();
         validate(name);
+        if (this.authorizationService.isUnauthorized(metacatRequestContext.getUserName(),
+            tableDto.getName(), MetacatACL.metacatCreate)) {
+            throw new MetacatUnAuthorizedException(
+                String.format("create table in %s db is unauthorized for %s",
+                    tableDto.getName().getDatabaseName(), metacatRequestContext.getUserName()));
+        }
         //
         // Set the owner,if null, with the session user name.
         //
@@ -165,8 +178,16 @@ public class TableServiceImpl implements TableService {
     @Override
     public TableDto deleteAndReturn(final QualifiedName name, final boolean isMView) {
         final MetacatRequestContext metacatRequestContext = MetacatContextManager.getContext();
-        eventBus.post(new MetacatDeleteTablePreEvent(name, metacatRequestContext, this));
         validate(name);
+        if (this.authorizationService.isUnauthorized(metacatRequestContext.getUserName(),
+            name, MetacatACL.metacatDelete)) {
+            throw new MetacatUnAuthorizedException(
+                String.format("delete table in %s db is unauthorized for %s",
+                    name.getDatabaseName(), metacatRequestContext.getUserName()));
+        }
+
+        eventBus.post(new MetacatDeleteTablePreEvent(name, metacatRequestContext, this));
+
         final Optional<TableDto> oTable = get(name,
             GetTableServiceParameters.builder()
                 .includeInfo(true)
@@ -290,7 +311,12 @@ public class TableServiceImpl implements TableService {
     ) {
         validate(oldName);
         final MetacatRequestContext metacatRequestContext = MetacatContextManager.getContext();
-
+        if (this.authorizationService.isUnauthorized(metacatRequestContext.getUserName(),
+            oldName, MetacatACL.metacatDelete)) {
+            throw new MetacatUnAuthorizedException(
+                String.format("rename table in %s db is unauthorized for %s",
+                    oldName.getDatabaseName(), metacatRequestContext.getUserName()));
+        }
         final TableDto oldTable = get(oldName, GetTableServiceParameters.builder()
             .includeInfo(true)
             .disableOnReadMetadataIntercetor(false)

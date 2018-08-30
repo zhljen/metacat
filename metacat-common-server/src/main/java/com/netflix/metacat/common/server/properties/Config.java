@@ -38,14 +38,18 @@ public interface Config {
 
     /**
      * Enable publishing partitions to elastic search.
+     *
      * @return true if publishing partitions to elastic search is enabled
      */
     boolean isElasticSearchPublishPartitionEnabled();
+
     /**
      * Enable publishing metacat es error logs to elastic search.
+     *
      * @return true if publishing metacat es error logs to elastic search is enabled
      */
     boolean isElasticSearchPublishMetacatLogEnabled();
+
     /**
      * Elastic search cluster name.
      *
@@ -348,4 +352,19 @@ public interface Config {
      * @return true if cache is enabled
      */
     boolean isCacheEnabled();
+
+    /**
+     * Get the metacat create acl property.
+     *
+     * @return The metacat create acl property
+     */
+    String getMetacatCreateAcl();
+
+    /**
+     * Get the metacat delete acl property.
+     *
+     * @return The metacat delete acl property
+     */
+    String getMetacatDeleteAcl();
 }
+
