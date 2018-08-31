@@ -29,15 +29,14 @@ public interface AuthorizationService {
     /**
      * Check metacat acl property if this operation is permitted.
      *
-     * @param userName      username
-     * @param name           qualified Name
-     * @param op             operation
-     * @return true if isUnauthorized
+     * @param userName username
+     * @param name     qualified Name
+     * @param op       operation
      */
-    default boolean isUnauthorized(final String userName,
-                                   final QualifiedName name,
-                                   final MetacatACL op) {
-        return false;
+    default void checkPermission(final String userName,
+                                 final QualifiedName name,
+                                 final MetacatOperation op) {
+
     }
 
 }

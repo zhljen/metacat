@@ -56,8 +56,8 @@ services:
                 -Dmetacat.hive.metastore.batchSize=10
                 -Dmetacat.usermetadata.config.location=/etc/metacat/usermetadata.properties
                 -Dmetacat.cache.enabled=true
-                -Dmetacat.authorization.createAcl=embedded-fast-hive-metastore/fsmoke_acl:metacat-prod
-                -Dmetacat.authorization.deleteAcl=embedded-fast-hive-metastore/fsmoke_acl:metacat-prod'
+                -Dmetacat.authorization.createAcl.createAclStr=embedded-fast-hive-metastore/fsmoke_acl:metacat-prod
+                -Dmetacat.authorization.deleteAcl.deleteAclStr=embedded-fast-hive-metastore/fsmoke_acl:metacat-prod'
         labels:
           - "com.netflix.metacat.oss.test"
           - "com.netflix.metacat.oss.test.war"

@@ -22,6 +22,7 @@ import lombok.NonNull;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -420,13 +421,19 @@ public class DefaultConfigImpl implements Config {
         return this.metacatProperties.getCache().isEnabled();
     }
 
+
     @Override
-    public String getMetacatCreateAcl() {
-        return this.metacatProperties.getAuthorization().getCreateAcl();
+    public boolean isAuthorizationEnabled() {
+        return this.metacatProperties.getAuthorization().isEnabled();
     }
 
     @Override
-    public String getMetacatDeleteAcl() {
-        return this.metacatProperties.getAuthorization().getDeleteAcl();
+    public Map<QualifiedName, Set<String>> getMetacatCreateAcl() {
+        return this.metacatProperties.getAuthorization().getCreateAcl().getCreateAclMap();
+    }
+
+    @Override
+    public Map<QualifiedName, Set<String>> getMetacatDeleteAcl() {
+        return this.metacatProperties.getAuthorization().getDeleteAcl().getDeleteAclMap();
     }
 }

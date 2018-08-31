@@ -18,14 +18,9 @@
 package com.netflix.metacat.common.server.usermetadata;
 
 import com.netflix.metacat.common.QualifiedName;
-import com.netflix.metacat.common.exception.MetacatException;
+import com.netflix.metacat.common.exception.MetacatUnAuthorizedException;
 import com.netflix.metacat.common.server.properties.Config;
-import com.netflix.servo.util.VisibleForTesting;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,8 +32,8 @@ import java.util.Set;
  */
 public class DefaultAuthorizationService implements AuthorizationService {
     //catalog+database name as the acl control key, and userNames as the value
-    private final Map<String, Set<String>> createACL;
-    private final Map<String, Set<String>> deleteACL;
+    private final Map<QualifiedName, Set<String>> createACL;
+    private final Map<QualifiedName, Set<String>> deleteACL;
 
     /**
      * Constructor.
@@ -48,61 +43,45 @@ public class DefaultAuthorizationService implements AuthorizationService {
     public DefaultAuthorizationService(
         final Config config
     ) {
-        this.createACL = this.getACLMap(config.getMetacatCreateAcl());
-        this.deleteACL = this.getACLMap(config.getMetacatDeleteAcl());
+        this.createACL = config.getMetacatCreateAcl();
+        this.deleteACL = config.getMetacatDeleteAcl();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean isUnauthorized(final String userName,
-                                  final QualifiedName name,
-                                  final MetacatACL op) {
+    public void checkPermission(final String userName,
+                                final QualifiedName name,
+                                final MetacatOperation op) {
         switch (op) {
-            case metacatCreate:
-                return isUnauthorized(createACL, userName, name);
-            case metacatDelete:
-                return isUnauthorized(deleteACL, userName, name);
+            case CREATE:
+                checkPermit(createACL, userName, name, op);
+                break;
+            case RENAME:
+            case DELETE:
+                checkPermit(deleteACL, userName, name, op);
+                break;
             default:
-                return true;
+
         }
     }
 
-    private boolean isUnauthorized(final Map<String, Set<String>> accessACL,
-                                   final String userName,
-                                   final QualifiedName name) {
+    private void checkPermit(final Map<QualifiedName, Set<String>> accessACL,
+                             final String userName,
+                             final QualifiedName name,
+                             final MetacatOperation op) {
         //for the names without database
         if (!name.isCatalogDefinition() || !name.isDatabaseDefinition()) {
-            return false;
+            return;
         }
         final Set<String> users =
-            accessACL.get(QualifiedName.ofDatabase(name.getCatalogName(), name.getDatabaseName()).toString());
-        return (users != null) && !users.isEmpty() && !users.contains(userName);
-    }
-
-    /**
-     * Parse the configuration to get operation control. The control is at userName level
-     * and the controlled operations include create, delete, and rename for table.
-     * The format is below.
-     * db1:user1,user2|db2:user1,user2
-     *
-     * @param aclConfig the config strings for dbs
-     * @return acl config
-     */
-    @VisibleForTesting
-    private Map<String, Set<String>> getACLMap(final String aclConfig) {
-        final Map<String, Set<String>> aclMap = new HashMap<>();
-        try {
-            for (String aclstr: StringUtils.split(aclConfig, "|")) {
-                aclMap.put(aclstr.substring(0, aclstr.indexOf(":")),
-                    new HashSet<>(Arrays.asList(StringUtils.split(aclstr.substring(aclstr.indexOf(":") + 1), ","))));
-            }
-
-        } catch (Exception e) {
-            throw new MetacatException("metacat acl property parsing error" + e.getMessage());
+            accessACL.get(QualifiedName.ofDatabase(name.getCatalogName(), name.getDatabaseName()));
+        if ((users != null) && !users.isEmpty() && !users.contains(userName)) {
+            throw new MetacatUnAuthorizedException(String.format("%s is not permitted for %s %s",
+                userName, op.name(), name
+            ));
         }
-        return aclMap;
     }
 
 }

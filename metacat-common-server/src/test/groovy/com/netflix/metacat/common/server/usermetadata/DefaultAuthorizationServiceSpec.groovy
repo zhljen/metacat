@@ -18,7 +18,7 @@
 package com.netflix.metacat.common.server.usermetadata
 
 import com.netflix.metacat.common.QualifiedName
-import com.netflix.metacat.common.exception.MetacatException
+import com.netflix.metacat.common.exception.MetacatUnAuthorizedException
 import com.netflix.metacat.common.server.properties.Config
 import spock.lang.Shared
 import spock.lang.Specification
@@ -27,52 +27,66 @@ class DefaultAuthorizationServiceSpec extends Specification{
     @Shared conf  = Mock(Config)
 
     def setupSpec() {
-        conf.getMetacatCreateAcl() >> { return "prodhive/abc:bdp_janitor" }
-        conf.getMetacatDeleteAcl() >> { return "prodhive/abc:bdp_janitor" }
+        Map<QualifiedName, Set<String>> map = new HashMap<>()
+        map.put(QualifiedName.fromString("prodhive/abc"), ["bdp_janitor"].toSet())
+        conf.getMetacatCreateAcl() >> { return map }
+        conf.getMetacatDeleteAcl() >> { return map }
     }
 
     def "Test unauthorized check"() {
         def authorizationService = new DefaultAuthorizationService(conf)
         when:
-        def ret = authorizationService.isUnauthorized(null,
-            QualifiedName.fromString("prodhive/abc") , MetacatACL.metacatCreate)
+        authorizationService.checkPermission("",
+            QualifiedName.fromString("prodhive/abcd") , MetacatOperation.CREATE)
         then:
-        ret
+        noExceptionThrown()
         when:
-        ret = authorizationService.isUnauthorized(null ,
-            QualifiedName.fromString("prodhive/abc") , MetacatACL.metacatDelete)
+        authorizationService.checkPermission("bdp_janitor",
+            QualifiedName.fromString("prodhive/abcd") , MetacatOperation.DELETE)
         then:
-        ret
+        noExceptionThrown()
         when:
-        ret = authorizationService.isUnauthorized(null ,
-            QualifiedName.fromString("prodhive/default") , MetacatACL.metacatDelete)
+        authorizationService.checkPermission("bdp_janitor",
+            QualifiedName.fromString("prodhive/abcd") , MetacatOperation.RENAME)
         then:
-        !ret
+        noExceptionThrown()
+
+        when:
+        authorizationService.checkPermission("bdp_janitor",
+            QualifiedName.fromString("prodhive/abc") , MetacatOperation.CREATE)
+        then:
+        noExceptionThrown()
+
+        when:
+        authorizationService.checkPermission(null ,
+            QualifiedName.fromString("prodhive/abc") , MetacatOperation.DELETE)
+        then:
+        thrown MetacatUnAuthorizedException
+
+        when:
+        authorizationService.checkPermission("bdp_janitor" ,
+            QualifiedName.fromString("prodhive/abc") , MetacatOperation.DELETE)
+        then:
+        noExceptionThrown()
+
+        when:
+        authorizationService.checkPermission("bdp_janitor_2" ,
+            QualifiedName.fromString("prodhive/abc") , MetacatOperation.DELETE)
+        then:
+        thrown MetacatUnAuthorizedException
+
+        when:
+        authorizationService.checkPermission("" ,
+            QualifiedName.fromString("prodhive/abc") , MetacatOperation.DELETE)
+        then:
+        thrown MetacatUnAuthorizedException
+
+        when:
+        authorizationService.checkPermission("bdp_janitor_2",
+            QualifiedName.fromString("prodhive/abc") , MetacatOperation.RENAME)
+        then:
+        thrown MetacatUnAuthorizedException
   }
 
-    def "Test getAclMap"() {
-        def authorizationService = new DefaultAuthorizationService(conf)
-        expect:
-        result.toString() == authorizationService.getACLMap(aclconfig).toString()
-        where:
-        aclconfig                    | result
-        'prodhive/default:ursula,datauser|prodhive/vault_events:ursula,datauser|prodhive/ursula:ursula,datauser'     | '[prodhive/ursula:[datauser, ursula], prodhive/default:[datauser, ursula], prodhive/vault_events:[datauser, ursula]]'
-        'prodhive/default:ursula,datauser'     | '[prodhive/default:[datauser, ursula]]'
-    }
 
-    def "Test getAclMap empty user"() {
-        def authorizationService = new DefaultAuthorizationService(conf)
-        when:
-        def result = authorizationService.getACLMap('prodhive/default:')
-        then:
-        result.get('prodhive/default').isEmpty()
-    }
-
-    def "Test getAclMap format error"() {
-        def authorizationService = new DefaultAuthorizationService(conf)
-        when:
-        authorizationService.getACLMap('prodhive/default')
-        then:
-        thrown MetacatException
-    }
 }

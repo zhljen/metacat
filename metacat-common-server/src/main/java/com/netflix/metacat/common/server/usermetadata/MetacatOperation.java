@@ -20,19 +20,23 @@ package com.netflix.metacat.common.server.usermetadata;
 import lombok.Getter;
 
 /**
- * Metacat ACL.
+ * Metacat Operation.
  *
  * @author zhenl
  * @since 1.2.0
  */
 @Getter
-public enum MetacatACL {
+public enum MetacatOperation {
     /**
-     * metacat create.
+     * create operation.
      */
-    metacatCreate,
+    CREATE,
     /**
-     * metacat delete.
+     * delete operation.
      */
-    metacatDelete
+    DELETE,
+    /**
+     * rename operation.
+     */
+    RENAME
 }

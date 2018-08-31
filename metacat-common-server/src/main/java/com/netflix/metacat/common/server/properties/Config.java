@@ -16,6 +16,7 @@ package com.netflix.metacat.common.server.properties;
 import com.netflix.metacat.common.QualifiedName;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -354,17 +355,24 @@ public interface Config {
     boolean isCacheEnabled();
 
     /**
+     * Enable authorization.
+     *
+     * @return true if authorization is enabled
+     */
+    boolean isAuthorizationEnabled();
+
+    /**
      * Get the metacat create acl property.
      *
      * @return The metacat create acl property
      */
-    String getMetacatCreateAcl();
+    Map<QualifiedName, Set<String>> getMetacatCreateAcl();
 
     /**
      * Get the metacat delete acl property.
      *
      * @return The metacat delete acl property
      */
-    String getMetacatDeleteAcl();
+    Map<QualifiedName, Set<String>> getMetacatDeleteAcl();
 }
 

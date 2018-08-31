@@ -25,7 +25,6 @@ import com.netflix.metacat.common.dto.DatabaseDto;
 import com.netflix.metacat.common.dto.StorageDto;
 import com.netflix.metacat.common.dto.TableDto;
 import com.netflix.metacat.common.exception.MetacatNotSupportedException;
-import com.netflix.metacat.common.exception.MetacatUnAuthorizedException;
 import com.netflix.metacat.common.server.connectors.exception.NotFoundException;
 import com.netflix.metacat.common.server.connectors.exception.TableNotFoundException;
 import com.netflix.metacat.common.server.events.MetacatCreateTablePostEvent;
@@ -41,7 +40,7 @@ import com.netflix.metacat.common.server.monitoring.Metrics;
 import com.netflix.metacat.common.server.properties.Config;
 import com.netflix.metacat.common.server.usermetadata.AuthorizationService;
 import com.netflix.metacat.common.server.usermetadata.GetMetadataInterceptorParameters;
-import com.netflix.metacat.common.server.usermetadata.MetacatACL;
+import com.netflix.metacat.common.server.usermetadata.MetacatOperation;
 import com.netflix.metacat.common.server.usermetadata.TagService;
 import com.netflix.metacat.common.server.usermetadata.UserMetadataService;
 import com.netflix.metacat.common.server.util.MetacatContextManager;
@@ -111,12 +110,8 @@ public class TableServiceImpl implements TableService {
     public TableDto create(final QualifiedName name, final TableDto tableDto) {
         final MetacatRequestContext metacatRequestContext = MetacatContextManager.getContext();
         validate(name);
-        if (this.authorizationService.isUnauthorized(metacatRequestContext.getUserName(),
-            tableDto.getName(), MetacatACL.metacatCreate)) {
-            throw new MetacatUnAuthorizedException(
-                String.format("create table in %s db is unauthorized for %s",
-                    tableDto.getName().getDatabaseName(), metacatRequestContext.getUserName()));
-        }
+        this.authorizationService.checkPermission(metacatRequestContext.getUserName(),
+            tableDto.getName(), MetacatOperation.CREATE);
         //
         // Set the owner,if null, with the session user name.
         //
@@ -179,12 +174,8 @@ public class TableServiceImpl implements TableService {
     public TableDto deleteAndReturn(final QualifiedName name, final boolean isMView) {
         final MetacatRequestContext metacatRequestContext = MetacatContextManager.getContext();
         validate(name);
-        if (this.authorizationService.isUnauthorized(metacatRequestContext.getUserName(),
-            name, MetacatACL.metacatDelete)) {
-            throw new MetacatUnAuthorizedException(
-                String.format("delete table in %s db is unauthorized for %s",
-                    name.getDatabaseName(), metacatRequestContext.getUserName()));
-        }
+        this.authorizationService.checkPermission(metacatRequestContext.getUserName(),
+            name, MetacatOperation.DELETE);
 
         eventBus.post(new MetacatDeleteTablePreEvent(name, metacatRequestContext, this));
 
@@ -311,12 +302,9 @@ public class TableServiceImpl implements TableService {
     ) {
         validate(oldName);
         final MetacatRequestContext metacatRequestContext = MetacatContextManager.getContext();
-        if (this.authorizationService.isUnauthorized(metacatRequestContext.getUserName(),
-            oldName, MetacatACL.metacatDelete)) {
-            throw new MetacatUnAuthorizedException(
-                String.format("rename table in %s db is unauthorized for %s",
-                    oldName.getDatabaseName(), metacatRequestContext.getUserName()));
-        }
+        this.authorizationService.checkPermission(metacatRequestContext.getUserName(),
+            oldName, MetacatOperation.RENAME);
+
         final TableDto oldTable = get(oldName, GetTableServiceParameters.builder()
             .includeInfo(true)
             .disableOnReadMetadataIntercetor(false)

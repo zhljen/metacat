@@ -19,7 +19,6 @@ import com.netflix.metacat.common.MetacatRequestContext;
 import com.netflix.metacat.common.QualifiedName;
 import com.netflix.metacat.common.dto.CatalogDto;
 import com.netflix.metacat.common.dto.DatabaseDto;
-import com.netflix.metacat.common.exception.MetacatUnAuthorizedException;
 import com.netflix.metacat.common.server.connectors.ConnectorDatabaseService;
 import com.netflix.metacat.common.server.connectors.ConnectorRequestContext;
 import com.netflix.metacat.common.server.connectors.ConnectorTableService;
@@ -32,14 +31,14 @@ import com.netflix.metacat.common.server.events.MetacatDeleteDatabasePreEvent;
 import com.netflix.metacat.common.server.events.MetacatEventBus;
 import com.netflix.metacat.common.server.events.MetacatUpdateDatabasePostEvent;
 import com.netflix.metacat.common.server.events.MetacatUpdateDatabasePreEvent;
+import com.netflix.metacat.common.server.spi.MetacatCatalogConfig;
 import com.netflix.metacat.common.server.usermetadata.AuthorizationService;
-import com.netflix.metacat.common.server.usermetadata.MetacatACL;
+import com.netflix.metacat.common.server.usermetadata.MetacatOperation;
+import com.netflix.metacat.common.server.usermetadata.UserMetadataService;
+import com.netflix.metacat.common.server.util.MetacatContextManager;
 import com.netflix.metacat.main.manager.ConnectorManager;
 import com.netflix.metacat.main.services.CatalogService;
 import com.netflix.metacat.main.services.DatabaseService;
-import com.netflix.metacat.common.server.spi.MetacatCatalogConfig;
-import com.netflix.metacat.common.server.usermetadata.UserMetadataService;
-import com.netflix.metacat.common.server.util.MetacatContextManager;
 import com.netflix.metacat.main.services.GetDatabaseServiceParameters;
 import lombok.extern.slf4j.Slf4j;
 
@@ -155,12 +154,8 @@ public class DatabaseServiceImpl implements DatabaseService {
     public void delete(final QualifiedName name) {
         validate(name);
         final MetacatRequestContext metacatRequestContext = MetacatContextManager.getContext();
-        if (this.authorizationService.isUnauthorized(metacatRequestContext.getUserName(),
-            name, MetacatACL.metacatDelete)) {
-            throw new MetacatUnAuthorizedException(
-                String.format("delete %s db is unauthorized for %s",
-                    name.getDatabaseName(), metacatRequestContext.getUserName()));
-        }
+        this.authorizationService.checkPermission(metacatRequestContext.getUserName(),
+            name, MetacatOperation.DELETE);
         log.info("Dropping schema {}", name);
         final DatabaseDto dto = get(name, GetDatabaseServiceParameters.builder()
             .disableOnReadMetadataIntercetor(false)

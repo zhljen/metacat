@@ -18,25 +18,21 @@
 
 package com.netflix.metacat.main.services.impl
 
-import com.netflix.metacat.common.MetacatRequestContext
 import com.netflix.metacat.common.QualifiedName
 import com.netflix.metacat.common.server.connectors.ConnectorRequestContext
 import com.netflix.metacat.common.server.connectors.ConnectorTableService
 import com.netflix.metacat.common.server.converter.ConverterUtil
 import com.netflix.metacat.common.server.events.MetacatEventBus
 import com.netflix.metacat.common.server.properties.Config
-import com.netflix.metacat.common.server.usermetadata.AuthorizationService
 import com.netflix.metacat.common.server.usermetadata.DefaultAuthorizationService
 import com.netflix.metacat.common.server.usermetadata.TagService
 import com.netflix.metacat.common.server.usermetadata.UserMetadataService
-import com.netflix.metacat.common.server.util.MetacatContextManager
 import com.netflix.metacat.main.manager.ConnectorManager
 import com.netflix.metacat.main.services.DatabaseService
 import com.netflix.metacat.main.services.GetTableServiceParameters
 import com.netflix.metacat.main.services.TableService
 import com.netflix.metacat.testdata.provider.DataDtoProvider
 import com.netflix.spectator.api.NoopRegistry
-import spock.lang.Shared
 import spock.lang.Specification
 
 /**
@@ -62,8 +58,8 @@ class TableServiceImplSpec extends Specification {
 
     TableService service
     def setup() {
-        config.getMetacatCreateAcl() >> ""
-        config.getMetacatDeleteAcl() >> ""
+        config.getMetacatCreateAcl() >> new HashMap<QualifiedName, Set<String>>()
+        config.getMetacatDeleteAcl() >> new HashMap<QualifiedName, Set<String>>()
         connectorManager.getTableService(_) >> connectorTableService
         converterUtil.toTableDto(_) >> tableDto
         converterUtil.toConnectorContext(_) >> Mock(ConnectorRequestContext)
