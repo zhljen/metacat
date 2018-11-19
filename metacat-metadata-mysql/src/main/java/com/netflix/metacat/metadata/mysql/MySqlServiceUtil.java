@@ -18,9 +18,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.netflix.metacat.common.server.usermetadata.UserMetadataService;
 import com.netflix.metacat.common.server.util.DataSourceManager;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import javax.annotation.Nullable;
 import java.io.Reader;
 import java.net.URL;
 import java.nio.file.FileSystems;
@@ -44,8 +46,8 @@ public final class MySqlServiceUtil {
      * Returns the list of string having the input ids.
      *
      * @param jdbcTemplate jdbc template
-     * @param sql      query sql
-     * @param item     identifier
+     * @param sql          query sql
+     * @param item         identifier
      * @return list of results
      */
     public static Set<String> getValues(final JdbcTemplate jdbcTemplate,
@@ -68,11 +70,11 @@ public final class MySqlServiceUtil {
      * load mysql data source.
      *
      * @param dataSourceManager data source manager to use
-     * @param configLocation usermetadata config location
+     * @param configLocation    usermetadata config location
      * @throws Exception exception to throw
      */
     public static void loadMySqlDataSource(final DataSourceManager dataSourceManager,
-        final String configLocation) throws Exception {
+                                           final String configLocation) throws Exception {
 
         final URL url = Thread.currentThread().getContextClassLoader().getResource(configLocation);
         final Path filePath;
@@ -88,6 +90,48 @@ public final class MySqlServiceUtil {
             connectionProperties.load(reader);
         }
         dataSourceManager.load(UserMetadataService.NAME_DATASOURCE, connectionProperties);
+    }
+
+    /**
+     * Change the qualified name query parameter to wildcard query string to allow source/database/table
+     * like queries. It uses '%' to represent the other field if not provided. e.g.
+     * query database like string is '%/database/%'
+     * query catalog and database like string is 'catalog/database/%'
+     *
+     * @param sourceName source name
+     * @param databaseName database name
+     * @param tableName table name
+     * @return query string
+     */
+    static String qualifiedNameToWildCardQueryString(
+        @Nullable final String sourceName,
+        @Nullable final String databaseName,
+        @Nullable final String tableName
+    ) {
+        if (sourceName == null && databaseName == null && tableName == null) {
+            return null;
+        }
+        final StringBuilder builder = new StringBuilder();
+        if (!StringUtils.isEmpty(sourceName)) {
+            builder.append(sourceName);
+        } else {
+            builder.append('%');
+        }
+        if (StringUtils.isEmpty(databaseName) && StringUtils.isEmpty(tableName)) {
+            return builder.append('%').toString(); //query source level
+        }
+        if (!StringUtils.isEmpty(databaseName)) {
+            builder.append('/').append(databaseName);
+        } else {
+            builder.append("/%");
+        }
+        if (StringUtils.isEmpty(tableName)) {
+            return builder.append('%').toString(); //database level query
+        } else {
+            builder.append('/').append(tableName);
+        }
+        builder.append('%');
+        return builder.toString();
     }
 }
 

@@ -26,6 +26,7 @@ import lombok.NonNull;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -557,26 +558,53 @@ public final class QualifiedName implements Serializable {
         /**
          * Catalog type.
          */
-        CATALOG,
+        CATALOG("catalog"),
 
         /**
          * Database type.
          */
-        DATABASE,
+        DATABASE("database"),
 
         /**
          * Table type.
          */
-        TABLE,
+        TABLE("table"),
 
         /**
          * Partition type.
          */
-        PARTITION,
+        PARTITION("partition"),
 
         /**
          * MView type.
          */
-        MVIEW
+        MVIEW("mview");
+
+        private final String value;
+
+        /**
+         * Constructor.
+         *
+         * @param value category value.
+         */
+        Type(final String value) {
+            this.value = value;
+        }
+
+        /**
+         * Type create from value.
+         *
+         * @param value string value
+         * @return Type object
+         */
+        public static Type fromValue(final String value) {
+            for (Type type : values()) {
+                if (type.value.equalsIgnoreCase(value)) {
+                    return type;
+                }
+            }
+            throw new IllegalArgumentException(
+                "Unknown enum type " + value + ", Allowed values are " + Arrays.toString(values()));
+        }
     }
 }

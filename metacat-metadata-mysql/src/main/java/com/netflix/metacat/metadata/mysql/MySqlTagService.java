@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.netflix.metacat.common.QualifiedName;
+import com.netflix.metacat.common.exception.MetacatNotSupportedException;
 import com.netflix.metacat.common.json.MetacatJson;
 import com.netflix.metacat.common.server.model.Lookup;
 import com.netflix.metacat.common.server.model.TagItem;
@@ -40,6 +41,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,11 +50,26 @@ import java.util.stream.Collectors;
 
 /**
  * Tag service implementation.
+ *
+ * @author amajumdar
+ * @author zhenl
  */
 @Slf4j
 @SuppressFBWarnings
 @Transactional("metadataTxManager")
 public class MySqlTagService implements TagService {
+    /**
+     * QUALIFIEDNAME TYPE REGEX MAP.
+     */
+    private static final Map<QualifiedName.Type, String>
+        QUALIFIEDNAME_TYPE_REGEX_MAP = new HashMap<QualifiedName.Type, String>() {
+        {
+            put(QualifiedName.Type.CATALOG,  "'^([^\\/]+)$\'");
+            put(QualifiedName.Type.DATABASE, "'^([^\\/]+)\\/([^\\/]+)$\'");
+            put(QualifiedName.Type.TABLE,    "'^([^\\/]+)\\/([^\\/]+)\\/([^\\/]+)$\'");
+            put(QualifiedName.Type.MVIEW,    "'^([^\\/]+)\\/([^\\/]+)\\/([^\\/]+)\\/([^\\/]+)$\'");
+        }
+    };
     /**
      * Lookup name for tag.
      */
@@ -260,7 +277,7 @@ public class MySqlTagService implements TagService {
     public void remove(final QualifiedName name, final Set<String> tags, final boolean updateUserMetadata) {
         try {
             jdbcTemplate.update(String.format(SQL_DELETE_TAG_ITEM_TAGS_BY_NAME_TAGS,
-                    "'" + Joiner.on("','").skipNulls().join(tags) + "'"),
+                "'" + Joiner.on("','").skipNulls().join(tags) + "'"),
                 new SqlParameterValue(Types.VARCHAR, name.toString()));
             if (updateUserMetadata) {
                 final TagItem tagItem = get(name);
@@ -298,6 +315,7 @@ public class MySqlTagService implements TagService {
      * @param sourceName   catalog/source name
      * @param databaseName database name
      * @param tableName    table name
+     * @param type         metacat data category
      * @return list of qualified names of the items
      */
     @Override
@@ -307,25 +325,31 @@ public class MySqlTagService implements TagService {
         @Nullable final Set<String> excludeTags,
         @Nullable final String sourceName,
         @Nullable final String databaseName,
-        @Nullable final String tableName
+        @Nullable final String tableName,
+        @Nullable final QualifiedName.Type type
     ) {
         Set<String> includedNames = Sets.newHashSet();
         final Set<String> excludedNames = Sets.newHashSet();
-        final String wildCardName = QualifiedName.toWildCardString(sourceName, databaseName, tableName);
+        final String wildCardName =
+            MySqlServiceUtil.qualifiedNameToWildCardQueryString(sourceName, databaseName, tableName);
         //Includes
         final Set<String> localIncludes = includeTags != null ? includeTags : Sets.newHashSet();
         try {
-            String query
-                = String.format(QUERY_SEARCH, "in ('" + Joiner.on("','").skipNulls().join(localIncludes) + "')");
+            StringBuilder query = new StringBuilder(
+                String.format(QUERY_SEARCH, "in ('" + Joiner.on("','").skipNulls().join(localIncludes) + "')"));
             final Object[] params = {localIncludes.size() == 0 ? 1 : 0, wildCardName == null ? 1 : 0, wildCardName};
-            includedNames.addAll(jdbcTemplate.query(query, params,
+            addTypeLimitToTagQuery(query, type);
+            includedNames.addAll(jdbcTemplate.query(query.toString(), params,
                 new int[]{Types.INTEGER, Types.INTEGER, Types.VARCHAR},
                 (rs, rowNum) -> rs.getString("name")));
             if (excludeTags != null && !excludeTags.isEmpty()) {
                 //Excludes
-                query = String.format(QUERY_SEARCH, "in ('" + Joiner.on("','").skipNulls().join(excludeTags) + "')");
+
+                query = new StringBuilder(
+                    String.format(QUERY_SEARCH, "in ('" + Joiner.on("','").skipNulls().join(excludeTags) + "')"));
                 final Object[] eParams = {excludeTags.size() == 0 ? 1 : 0, wildCardName == null ? 1 : 0, wildCardName};
-                excludedNames.addAll(jdbcTemplate.query(query, eParams,
+                addTypeLimitToTagQuery(query, type);
+                excludedNames.addAll(jdbcTemplate.query(query.toString(), eParams,
                     new int[]{Types.INTEGER, Types.INTEGER, Types.VARCHAR},
                     (rs, rowNum) -> rs.getString("name")));
             }
@@ -334,7 +358,6 @@ public class MySqlTagService implements TagService {
             log.error(message, e);
             throw new UserMetadataServiceException(message, e);
         }
-
         if (excludeTags != null && !excludeTags.isEmpty()) {
             includedNames = Sets.difference(includedNames, excludedNames);
         }
@@ -384,7 +407,7 @@ public class MySqlTagService implements TagService {
      */
     @Override
     public Set<String> setTags(final QualifiedName name, final Set<String> tags,
-                                    final boolean updateUserMetadata) {
+                               final boolean updateUserMetadata) {
         addTags(tags);
         try {
             final TagItem tagItem = findOrCreateTagItemByName(name.toString());
@@ -440,11 +463,24 @@ public class MySqlTagService implements TagService {
      */
     @Override
     public void removeTags(final QualifiedName name, final Boolean deleteAll,
-                                final Set<String> tags, final boolean updateUserMetadata) {
+                           final Set<String> tags, final boolean updateUserMetadata) {
         if (deleteAll != null && deleteAll) {
             delete(name, updateUserMetadata);
         } else {
             remove(name, tags, updateUserMetadata);
+        }
+    }
+
+    /**
+     * Append the type regex to the query string.
+     */
+    private void addTypeLimitToTagQuery(final StringBuilder query, @Nullable final QualifiedName.Type type) {
+        if (type != null) {
+            if (type.equals(QualifiedName.Type.PARTITION)) {
+                throw new MetacatNotSupportedException("No support for listing tags only for partitionNames");
+            }
+            query.append(" and name regexp ")
+                .append(QUALIFIEDNAME_TYPE_REGEX_MAP.getOrDefault(type, ""));
         }
     }
 }
