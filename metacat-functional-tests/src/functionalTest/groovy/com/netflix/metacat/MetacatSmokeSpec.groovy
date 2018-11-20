@@ -1322,12 +1322,12 @@ class MetacatSmokeSpec extends Specification {
         def ret = tagApi.search('test_tag', null, null, null)
         def ret2 = tagApi.list(['test_tag'] as Set<String>, null, null, null, null, null)
         def ret3 = tagApi.list(['never_tag'] as Set<String>, tags as Set<String>, null, null, null, null)
-        def ret4 = tagApi.list(['test_tag'] as Set<String>, null, null, null, null, "database")
-        def ret5 = tagApi.list(['test_tag'] as Set<String>, null, null, null, null, "table")
-        def ret6 = tagApi.list(['test_tag'] as Set<String>, null, null, null, null, "catalog")
+        def ret4 = tagApi.list(['test_tag'] as Set<String>, null, null, null, null, QualifiedName.Type.DATABASE)
+        def ret5 = tagApi.list(['test_tag'] as Set<String>, null, null, null, null, QualifiedName.Type.TABLE)
+        def ret6 = tagApi.list(['test_tag'] as Set<String>, null, null, null, null, QualifiedName.Type.CATALOG)
 
-        def ret7 = tagApi.list(['test_tag'] as Set<String>, null, null, databaseName, null, "catalog")
-        def ret8 = tagApi.list(['test_tag'] as Set<String>, null, null, databaseName, null, "database")
+        def ret7 = tagApi.list(['test_tag'] as Set<String>, null, null, databaseName, null, QualifiedName.Type.CATALOG)
+        def ret8 = tagApi.list(['test_tag'] as Set<String>, null, null, databaseName, null, QualifiedName.Type.DATABASE)
 
         tagApi.removeTags(TagRemoveRequestDto.builder().name(catalog).tags([]).deleteAll(true).build())
         tagApi.removeTags(TagRemoveRequestDto.builder().name(database).tags([]).deleteAll(true).build())

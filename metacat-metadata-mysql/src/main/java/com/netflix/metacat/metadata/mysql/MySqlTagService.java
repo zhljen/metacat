@@ -41,7 +41,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,22 +58,13 @@ import java.util.stream.Collectors;
 @Transactional("metadataTxManager")
 public class MySqlTagService implements TagService {
     /**
-     * QUALIFIEDNAME TYPE REGEX MAP.
-     */
-    private static final Map<QualifiedName.Type, String>
-        QUALIFIEDNAME_TYPE_REGEX_MAP = new HashMap<QualifiedName.Type, String>() {
-        {
-            put(QualifiedName.Type.CATALOG,  "'^([^\\/]+)$\'");
-            put(QualifiedName.Type.DATABASE, "'^([^\\/]+)\\/([^\\/]+)$\'");
-            put(QualifiedName.Type.TABLE,    "'^([^\\/]+)\\/([^\\/]+)\\/([^\\/]+)$\'");
-            put(QualifiedName.Type.MVIEW,    "'^([^\\/]+)\\/([^\\/]+)\\/([^\\/]+)\\/([^\\/]+)$\'");
-        }
-    };
-    /**
      * Lookup name for tag.
      */
     private static final String LOOKUP_NAME_TAG = "tag";
     private static final String NAME_TAGS = "tags";
+    private static final String QUERY_LIST =
+        "select distinct i.name from tag_item i, tag_item_tags t where i.id=t.tag_item_id"
+            + " and (1=? or t.tags_string %s ) and (1=? or i.name like ?) and (1=? or i.name rlike %s)";
     private static final String QUERY_SEARCH =
         "select distinct i.name from tag_item i, tag_item_tags t where i.id=t.tag_item_id"
             + " and (1=? or t.tags_string %s ) and (1=? or i.name like ?)";
@@ -331,26 +321,42 @@ public class MySqlTagService implements TagService {
         Set<String> includedNames = Sets.newHashSet();
         final Set<String> excludedNames = Sets.newHashSet();
         final String wildCardName =
-            MySqlServiceUtil.qualifiedNameToWildCardQueryString(sourceName, databaseName, tableName);
+            QualifiedName.qualifiedNameToWildCardQueryString(sourceName, databaseName, tableName);
         //Includes
         final Set<String> localIncludes = includeTags != null ? includeTags : Sets.newHashSet();
         try {
             StringBuilder query = new StringBuilder(
-                String.format(QUERY_SEARCH, "in ('" + Joiner.on("','").skipNulls().join(localIncludes) + "')"));
-            final Object[] params = {localIncludes.size() == 0 ? 1 : 0, wildCardName == null ? 1 : 0, wildCardName};
-            addTypeLimitToTagQuery(query, type);
-            includedNames.addAll(jdbcTemplate.query(query.toString(), params,
-                new int[]{Types.INTEGER, Types.INTEGER, Types.VARCHAR},
+                String.format(QUERY_LIST, "in ('" + Joiner.on("','").skipNulls().join(localIncludes) + "')",
+                    QualifiedName.Type.getTypeRegexMap().getOrDefault(type, "\'.*\'")
+                ));
+            final Object[] params = {
+                localIncludes.size() == 0 ? 1 : 0,
+                wildCardName == null ? 1 : 0,
+                wildCardName,
+                type == null ? 1 : 0, };
+            includedNames.addAll(jdbcTemplate.query(query.toString(),
+                params,
+                new int[]{Types.INTEGER,
+                    Types.INTEGER,
+                    Types.VARCHAR,
+                    Types.INTEGER, },
                 (rs, rowNum) -> rs.getString("name")));
             if (excludeTags != null && !excludeTags.isEmpty()) {
                 //Excludes
-
                 query = new StringBuilder(
-                    String.format(QUERY_SEARCH, "in ('" + Joiner.on("','").skipNulls().join(excludeTags) + "')"));
-                final Object[] eParams = {excludeTags.size() == 0 ? 1 : 0, wildCardName == null ? 1 : 0, wildCardName};
-                addTypeLimitToTagQuery(query, type);
-                excludedNames.addAll(jdbcTemplate.query(query.toString(), eParams,
-                    new int[]{Types.INTEGER, Types.INTEGER, Types.VARCHAR},
+                    String.format(QUERY_LIST, "in ('" + Joiner.on("','").skipNulls().join(excludeTags) + "')",
+                        QualifiedName.Type.getTypeRegexMap().getOrDefault(type, "\'.*\'")));
+                final Object[] eParams = {
+                    excludeTags.size() == 0 ? 1 : 0,
+                    wildCardName == null ? 1 : 0,
+                    wildCardName,
+                    type == null ? 1 : 0, };
+                excludedNames.addAll(jdbcTemplate.query(query.toString(),
+                    eParams,
+                    new int[]{Types.INTEGER,
+                        Types.INTEGER,
+                        Types.VARCHAR,
+                        Types.INTEGER, },
                     (rs, rowNum) -> rs.getString("name")));
             }
         } catch (Exception e) {
@@ -480,7 +486,7 @@ public class MySqlTagService implements TagService {
                 throw new MetacatNotSupportedException("No support for listing tags only for partitionNames");
             }
             query.append(" and name regexp ")
-                .append(QUALIFIEDNAME_TYPE_REGEX_MAP.getOrDefault(type, ""));
+                .append(QualifiedName.Type.getTypeRegexMap().getOrDefault(type, ""));
         }
     }
 }

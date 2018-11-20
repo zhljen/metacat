@@ -81,7 +81,7 @@ public interface TagV1 {
         @QueryParam("tableName")
             String tableName,
         @QueryParam("type")
-            String type
+            QualifiedName.Type type
     );
 
     /**
